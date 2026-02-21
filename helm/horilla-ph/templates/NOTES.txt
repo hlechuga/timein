@@ -1,0 +1,32 @@
+1. Horilla HRMS has been deployed.
+
+   Release:   {{ .Release.Name }}
+   Namespace: {{ .Release.Namespace }}
+   Version:   {{ .Chart.AppVersion }}
+
+2. Get the application URL:
+{{- if .Values.ingress.enabled }}
+  {{- range .Values.ingress.hosts }}
+   http{{ if $.Values.ingress.tls }}s{{ end }}://{{ .host }}
+  {{- end }}
+{{- else }}
+   export POD_NAME=$(kubectl get pods --namespace {{ .Release.Namespace }} \
+     -l "app.kubernetes.io/name={{ include "horilla-ph.name" . }},app.kubernetes.io/instance={{ .Release.Name }}" \
+     -o jsonpath="{.items[0].metadata.name}")
+   kubectl --namespace {{ .Release.Namespace }} port-forward $POD_NAME 8000:8000
+   # Then open http://127.0.0.1:8000
+{{- end }}
+
+3. PostgreSQL PVC:
+{{- if .Values.postgresql.enabled }}
+   A PersistentVolumeClaim (PVC) is automatically managed by the StatefulSet:
+     data-{{ .Release.Name }}-horilla-ph-postgresql-0  ({{ .Values.postgresql.primary.persistence.size }})
+   Data is preserved across pod restarts as long as the PVC is not deleted.
+{{- else }}
+   Using external database: {{ .Values.externalDatabase.host }}
+{{- end }}
+
+⚠️  SECURITY REMINDERS
+   - Replace default SECRET_KEY and PostgreSQL password before going to production.
+   - Use Sealed Secrets or HashiCorp Vault to manage sensitive values.
+   - Enable TLS via the ingress.tls values to encrypt traffic in transit.
