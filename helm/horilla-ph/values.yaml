@@ -1,0 +1,167 @@
+# ==============================================================================
+# Horilla PH — Helm Chart Default Values
+# Override any of these values in a separate values file or via --set flags.
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# Global settings
+# ------------------------------------------------------------------------------
+global:
+  # imageRegistry: "registry.example.com"   # optional private registry prefix
+  storageClass: ""   # leave empty to use the cluster default StorageClass
+
+# ------------------------------------------------------------------------------
+# Horilla web application
+# ------------------------------------------------------------------------------
+replicaCount: 2
+
+image:
+  repository: ghcr.io/hlechuga/timein
+  tag: "latest"
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext:
+  fsGroup: 1000
+
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  readOnlyRootFilesystem: false
+  allowPrivilegeEscalation: false
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8000
+
+ingress:
+  enabled: false
+  className: "nginx"
+  annotations: {}
+    # cert-manager.io/cluster-issuer: "letsencrypt-prod"
+  hosts:
+    - host: horilla.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+  # - secretName: horilla-tls
+  #   hosts:
+  #     - horilla.example.com
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+# Liveness / readiness probes
+livenessProbe:
+  httpGet:
+    path: /health/
+    port: 8000
+  initialDelaySeconds: 30
+  periodSeconds: 15
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /health/
+    port: 8000
+  initialDelaySeconds: 15
+  periodSeconds: 10
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# Application environment variables (non-sensitive)
+app:
+  debug: "false"
+  allowedHosts: "*"
+  gunicornWorkers: "4"
+  gunicornThreads: "2"
+  gunicornTimeout: "120"
+
+# Sensitive application settings — stored in a Kubernetes Secret.
+# In production, manage these via a secrets manager (e.g. Vault, Sealed Secrets).
+appSecrets:
+  secretKey: "change-me-in-production-use-sealed-secrets"
+
+# ------------------------------------------------------------------------------
+# PostgreSQL (bundled StatefulSet)
+# Set postgresql.enabled=false to use an external database instead.
+# ------------------------------------------------------------------------------
+postgresql:
+  enabled: true
+
+  image:
+    repository: postgres
+    tag: "15-alpine"
+    pullPolicy: IfNotPresent
+
+  auth:
+    database: horilla
+    username: horilla
+    # In production, manage this via Vault / Sealed Secrets.
+    password: "horilla_secret"
+
+  primary:
+    persistence:
+      enabled: true
+      # storageClass: ""   # falls back to global.storageClass, then cluster default
+      accessModes:
+        - ReadWriteOnce
+      size: 10Gi
+
+    resources:
+      requests:
+        cpu: 250m
+        memory: 256Mi
+      limits:
+        cpu: 1000m
+        memory: 1Gi
+
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 999   # postgres uid in official image
+      fsGroup: 999
+
+  service:
+    port: 5432
+
+# ------------------------------------------------------------------------------
+# External database (used when postgresql.enabled=false)
+# ------------------------------------------------------------------------------
+externalDatabase:
+  host: ""
+  port: 5432
+  database: horilla
+  username: horilla
+  # Reference an existing secret instead of embedding the password here.
+  existingSecret: ""
+  existingSecretPasswordKey: "postgresql-password"

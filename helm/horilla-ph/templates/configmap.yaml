@@ -1,0 +1,17 @@
+{{- include "horilla-ph.validate" . -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "horilla-ph.fullname" . }}
+  labels:
+    {{- include "horilla-ph.labels" . | nindent 4 }}
+data:
+  DEBUG: {{ .Values.app.debug | quote }}
+  ALLOWED_HOSTS: {{ .Values.app.allowedHosts | quote }}
+  GUNICORN_WORKERS: {{ .Values.app.gunicornWorkers | quote }}
+  GUNICORN_THREADS: {{ .Values.app.gunicornThreads | quote }}
+  GUNICORN_TIMEOUT: {{ .Values.app.gunicornTimeout | quote }}
+  DB_HOST: {{ include "horilla-ph.databaseHost" . | quote }}
+  DB_PORT: {{ include "horilla-ph.databasePort" . | quote }}
+  DB_NAME: {{ include "horilla-ph.databaseName" . | quote }}
+  DB_USER: {{ include "horilla-ph.databaseUser" . | quote }}

@@ -1,0 +1,19 @@
+apiVersion: v2
+name: horilla-ph
+description: >
+  Helm chart for Horilla HRMS — Philippine-compliant deployment on Kubernetes.
+  Includes the Horilla web application and a bundled PostgreSQL StatefulSet
+  with persistent volume claims (PVC) for data durability.
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - hrms
+  - horilla
+  - philippines
+  - payroll
+  - dole
+  - bir
+home: https://github.com/hlechuga/timein
+maintainers:
+  - name: hlechuga

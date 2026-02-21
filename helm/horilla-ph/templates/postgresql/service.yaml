@@ -1,0 +1,37 @@
+{{- if .Values.postgresql.enabled }}
+# Headless service for StatefulSet DNS — pods are reachable at
+# <pod-name>.<headless-svc>.<namespace>.svc.cluster.local
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "horilla-ph.postgresql.fullname" . }}-headless
+  labels:
+    {{- include "horilla-ph.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  clusterIP: None
+  ports:
+    - name: postgresql
+      port: {{ .Values.postgresql.service.port }}
+      targetPort: postgresql
+      protocol: TCP
+  selector:
+    {{- include "horilla-ph.postgresql.selectorLabels" . | nindent 4 }}
+---
+# Standard ClusterIP service used by the Horilla app to connect to PostgreSQL
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "horilla-ph.postgresql.fullname" . }}
+  labels:
+    {{- include "horilla-ph.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - name: postgresql
+      port: {{ .Values.postgresql.service.port }}
+      targetPort: postgresql
+      protocol: TCP
+  selector:
+    {{- include "horilla-ph.postgresql.selectorLabels" . | nindent 4 }}
+{{- end }}
